@@ -206,7 +206,7 @@ validate_assertion(Xml, DuplicateFun, SP = #esaml_sp{}) ->
         end,
         fun(A) ->
             if SP#esaml_sp.idp_signs_envelopes ->
-                case xmerl_dsig:verify(Xml, SP#esaml_sp.trusted_fingerprints) of
+                case xmerl_dsig:verify(Xml, SP#esaml_sp.trusted_fingerprints, SP#esaml_sp.idp_certificate) of
                     ok -> A;
                     OuterError -> {error, {envelope, OuterError}}
                 end;
@@ -215,7 +215,7 @@ validate_assertion(Xml, DuplicateFun, SP = #esaml_sp{}) ->
         end,
         fun(A) ->
             if SP#esaml_sp.idp_signs_assertions ->
-                case xmerl_dsig:verify(A, SP#esaml_sp.trusted_fingerprints) of
+                case xmerl_dsig:verify(A, SP#esaml_sp.trusted_fingerprints, SP#esaml_sp.idp_certificate) of
                     ok -> A;
                     InnerError -> {error, {assertion, InnerError}}
                 end;

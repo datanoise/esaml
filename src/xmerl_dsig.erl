@@ -20,7 +20,7 @@
 %% enveloped mode.
 -module(xmerl_dsig).
 
--export([verify/1, verify/2, sign/3, strip/1, digest/1]).
+-export([verify/1, verify/3, sign/3, strip/1, digest/1]).
 
 -include_lib("xmerl/include/xmerl.hrl").
 -include_lib("public_key/include/public_key.hrl").
@@ -161,8 +161,8 @@ digest(Element, HashFunction) ->
 %% Will throw badmatch errors if you give it XML that is not signed
 %% according to the xml-dsig spec. If you're using something other
 %% than rsa+sha1 or sha256 this will asplode. Don't say I didn't warn you.
--spec verify(Element :: #xmlElement{}, Fingerprints :: [fingerprint()] | any) -> ok | {error, bad_digest | bad_signature | cert_not_accepted}.
-verify(Element, Fingerprints) ->
+-spec verify(Element :: #xmlElement{}, Fingerprints :: [fingerprint()] | any, IdpCert :: binary() | undefined) -> ok | {error, bad_digest | bad_signature | cert_not_accepted}.
+verify(Element, Fingerprints, IdpCert) ->
     DsNs = [{"ds", 'http://www.w3.org/2000/09/xmldsig#'},
         {"ec", 'http://www.w3.org/2001/10/xml-exc-c14n#'}],
 
@@ -195,7 +195,12 @@ verify(Element, Fingerprints) ->
         [#xmlText{value = Sig64}] = xmerl_xpath:string("ds:Signature//ds:SignatureValue/text()", Element, [{namespace, DsNs}]),
         Sig = base64:decode(Sig64),
 
-        [#xmlText{value = Cert64}] = xmerl_xpath:string("ds:Signature//ds:X509Certificate/text()", Element, [{namespace, DsNs}]),
+        Cert64 = case xmerl_xpath:string("ds:Signature//ds:X509Certificate/text()", Element, [{namespace, DsNs}]) of
+                      [#xmlText{value = Val}] ->
+                         Val;
+                      _ ->
+                         IdpCert
+                 end,
         CertBin = base64:decode(Cert64),
         CertHash = crypto:hash(sha, CertBin),
         CertHash2 = crypto:hash(sha256, CertBin),
@@ -228,7 +233,7 @@ verify(Element, Fingerprints) ->
 %% testing/development.
 -spec verify(Element :: xml_thing()) -> ok | {error, bad_digest | bad_signature | cert_not_accepted}.
 verify(Element) ->
-    verify(Element, any).
+    verify(Element, any, undefined).
 
 -spec signature_props(atom() | string()) -> {HashFunction :: atom(), DigestMethodUrl :: string(), SignatureMethodUrl :: string()}.
 signature_props("http://www.w3.org/2000/09/xmldsig#rsa-sha1") ->
