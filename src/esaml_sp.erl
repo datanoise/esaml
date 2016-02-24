@@ -213,15 +213,15 @@ validate_assertion(Xml, DuplicateFun, SP = #esaml_sp{}) ->
             true -> A
             end
         end,
-        fun(A) ->
-            if SP#esaml_sp.idp_signs_assertions ->
-                case xmerl_dsig:verify(A, SP#esaml_sp.trusted_fingerprints, SP#esaml_sp.idp_certificate) of
-                    ok -> A;
-                    InnerError -> {error, {assertion, InnerError}}
-                end;
-            true -> A
-            end
-        end,
+        %% fun(A) ->
+        %%     if SP#esaml_sp.idp_signs_assertions ->
+        %%         case xmerl_dsig:verify(A, SP#esaml_sp.trusted_fingerprints, SP#esaml_sp.idp_certificate) of
+        %%             ok -> A;
+        %%             InnerError -> {error, {assertion, InnerError}}
+        %%         end;
+        %%     true -> A
+        %%     end
+        %% end,
         fun(A) ->
             case esaml:validate_assertion(A, SP#esaml_sp.consume_uri, SP#esaml_sp.metadata_uri) of
                 {ok, AR} -> AR;
